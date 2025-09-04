@@ -36,18 +36,32 @@ interface IndustrySearchResult {
   companies: Company[];
 }
 
+interface AvailableIndustriesResponse {
+  industries: string[];
+}
+
+interface IndustryStatsResponse {
+  industries: Array<{
+    industry: string;
+    totalContacts: number;
+    totalCompanies: number;
+    totalLocations: number;
+    validEmails: number;
+  }>;
+}
+
 export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
 
   // Fetch available industries from GetProspect API
-  const { data: availableIndustries } = useQuery({
+  const { data: availableIndustries } = useQuery<AvailableIndustriesResponse>({
     queryKey: ["/api/industries/available"],
     enabled: !selectedIndustry,
   });
 
   // Fetch industry statistics from search history
-  const { data: industryStats } = useQuery({
+  const { data: industryStats } = useQuery<IndustryStatsResponse>({
     queryKey: ["/api/analytics/industries"],
     enabled: !selectedIndustry,
   });
