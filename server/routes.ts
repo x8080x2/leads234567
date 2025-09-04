@@ -33,22 +33,24 @@ async function searchContactsWithGetProspect(
   apiKey: string
 ): Promise<GetProspectResponse[]> {
   // Use the correct GetProspect API endpoint for domain search
-  const baseUrl = 'https://api.getprospect.com/v1/people/find';
+  const baseUrl = 'https://api.getprospect.com/v1/people/search';
   
   const requestBody: any = {
-    domain: searchParams.company,
+    company_domain: searchParams.company,
     limit: searchParams.limit || 10
   };
 
   // Add optional filters if provided
-  if (searchParams.jobTitle) requestBody.job_title = searchParams.jobTitle;
+  if (searchParams.jobTitle) requestBody.title = searchParams.jobTitle;
   if (searchParams.location) requestBody.location = searchParams.location;
+  if (searchParams.firstName) requestBody.first_name = searchParams.firstName;
+  if (searchParams.lastName) requestBody.last_name = searchParams.lastName;
 
   try {
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
-        'X-API-Key': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody)
