@@ -39,6 +39,18 @@ export default function SearchHistory({ searches }: SearchHistoryProps) {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Unknown date";
+      }
+      return date.toLocaleDateString();
+    } catch (error) {
+      return "Unknown date";
+    }
+  };
+
   const getStatusBadge = (search: EmailSearch) => {
     if (search.status === "found") {
       return (

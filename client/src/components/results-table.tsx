@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { exportToCsv } from "@/lib/csv-utils";
-import { Table, Trash2, Download, Copy, CheckCircle, Plus, Activity } from "lucide-react";
+import { Table, Trash2, Download, Copy, CheckCircle, Plus, Activity, User } from "lucide-react";
 import type { EmailSearch } from "@shared/schema";
 
 interface ResultsTableProps {
@@ -71,7 +71,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
     }));
 
     exportToCsv(csvData, `email-search-results-${new Date().toISOString().split('T')[0]}.csv`);
-    
+
     toast({
       title: "Export Successful",
       description: `Exported ${searches.length} search results to CSV.`,
@@ -82,16 +82,23 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
     try {
       await navigator.clipboard.writeText(text);
       toast({
-        title: "Copied to Clipboard",
-        description: `${type} copied successfully.`,
+        title: "Copied!",
+        description: `${type} copied to clipboard`,
+        duration: 2000,
       });
-    } catch (error) {
+    } catch (err) {
       toast({
-        title: "Copy Failed",
-        description: "Failed to copy to clipboard.",
+        title: "Copy failed",
+        description: "Unable to copy to clipboard",
         variant: "destructive",
+        duration: 2000,
       });
     }
+  };
+
+  const getInitials = (firstName: string, lastName: string) => {
+    if (!firstName || !lastName) return "??";
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   const getConfidenceBadge = (search: EmailSearch) => {
@@ -130,11 +137,6 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
         </Badge>
       );
     }
-  };
-
-  const getInitials = (firstName: string, lastName: string) => {
-    if (!firstName || !lastName) return "??";
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -238,19 +240,15 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                     data-testid={`row-search-${search.id}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
-                              {getInitials(search.firstName, search.lastName)}
-                            </span>
-                          </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
                         </div>
-                        <div className="ml-4">
+                        <div>
                           <div className="text-sm font-medium text-foreground">
-                            {search.fullName || `${search.firstName} ${search.lastName}`}
+                            {search.fullName || (search.firstName && search.lastName ? `${search.firstName} ${search.lastName}` : 'Unknown Name')}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {search.title || "No title"}
                           </div>
                           {search.industry && (
