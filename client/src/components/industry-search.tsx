@@ -45,12 +45,6 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch available industries from GetProspect API
-  const { data: availableIndustries } = useQuery({
-    queryKey: ["/api/industries/available"],
-    enabled: !selectedIndustry,
-  });
-
   // Fetch industry statistics from search history
   const { data: industryStats } = useQuery({
     queryKey: ["/api/analytics/industries"],
@@ -294,42 +288,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
         </Card>
       )}
 
-      {/* Available Industries from GetProspect API */}
-      {!selectedIndustry && (availableIndustries as any)?.industries && Array.isArray((availableIndustries as any).industries) && (availableIndustries as any).industries.length > 0 && (
-        <Card data-testid="available-industries-card">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building2 className="text-primary mr-2" />
-              Available Industries
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Select from {((availableIndustries as any)?.industries?.length || 0)} industries supported by GetProspect API
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {(availableIndustries?.industries || []).map((industry: string) => {
-                const hasData = (industryStats as any)?.industries?.find((stat: any) => stat.industry === industry);
-                return (
-                  <div
-                    key={industry}
-                    className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
-                    onClick={() => handleIndustrySelect(industry)}
-                    data-testid={`industry-option-${industry.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <div className="font-medium text-sm group-hover:text-primary transition-colors">{industry}</div>
-                    {hasData && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {hasData.totalContacts} contacts • {hasData.totalCompanies} companies
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      
 
       {/* Industry Search Results */}
       {selectedIndustry && (
