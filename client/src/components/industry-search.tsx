@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Building, Building2, Users, MapPin, Globe, Search, TrendingUp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Building, Building2, Users, MapPin, Globe, Search, TrendingUp, Loader2, Mail, Briefcase } from "lucide-react";
 
 interface IndustrySearchProps {
   onCompanySelect?: (company: any) => void;
@@ -39,6 +40,10 @@ interface IndustrySearchResult {
 export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [companyDomain, setCompanyDomain] = useState("");
+  const [companyResults, setCompanyResults] = useState<any>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch available industries from GetProspect API
   const { data: availableIndustries } = useQuery({
@@ -74,6 +79,61 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
     setSearchTerm("");
   };
 
+  const clearCompanySearch = () => {
+    setCompanyDomain("");
+    setCompanyResults(null);
+  };
+
+  // Company domain search mutation
+  const companySearchMutation = useMutation({
+    mutationFn: async (searchData: { company?: string; domain?: string }) => {
+      const response = await fetch('/api/search/company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchData)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Company search failed');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCompanyResults(data);
+      toast({
+        title: "Company search completed",
+        description: `Found ${data.totalFound} employees at ${data.company}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/searches"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Search failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCompanySearch = () => {
+    if (!companyDomain.trim()) {
+      toast({
+        title: "Company name required",
+        description: "Please enter a company name or domain",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Determine if it's a domain or company name
+    const isDomain = companyDomain.includes('.') || companyDomain.includes('www');
+    const searchData = isDomain 
+      ? { domain: companyDomain.replace(/^https?:\/\//, '').replace(/^www\./, '') }
+      : { company: companyDomain };
+    
+    companySearchMutation.mutate(searchData);
+  };
+
   return (
     <div className="space-y-6">
       {/* Search Interface */}
@@ -106,8 +166,136 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
         </CardContent>
       </Card>
 
+      {/* Company Domain Search */}
+      <Card data-testid="company-search-card">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Globe className="text-primary mr-2" />
+            Company Domain Search
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Find all employees from any company using our comprehensive search approach
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex space-x-2">
+            <Input
+              placeholder="Enter company name or domain (e.g., DR Horton, microsoft.com)"
+              value={companyDomain}
+              onChange={(e) => setCompanyDomain(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCompanySearch()}
+              data-testid="input-company-domain"
+            />
+            <Button 
+              onClick={handleCompanySearch} 
+              disabled={!companyDomain.trim() || companySearchMutation.isPending}
+            >
+              {companySearchMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4 mr-2" />
+              )}
+              {companySearchMutation.isPending ? "Searching..." : "Find Employees"}
+            </Button>
+            {companyResults && (
+              <Button variant="outline" onClick={clearCompanySearch}>
+                Clear
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Company Search Results */}
+      {companyResults && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Employees at {companyResults.company}</span>
+              <Badge variant="secondary">
+                {companyResults.totalFound} employees found
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {companyResults.results.map((employee: any, index: number) => (
+                <div
+                  key={employee.id}
+                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  data-testid={`employee-result-${index}`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <div className="font-medium text-lg flex items-center">
+                        <Users className="w-5 h-5 mr-2 text-primary" />
+                        {employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        {employee.email && (
+                          <div className="flex items-center text-blue-600">
+                            <Mail className="w-4 h-4 mr-2" />
+                            <a href={`mailto:${employee.email}`} className="hover:underline">
+                              {employee.email}
+                            </a>
+                          </div>
+                        )}
+                        {employee.title && (
+                          <div className="flex items-center text-muted-foreground">
+                            <Briefcase className="w-4 h-4 mr-2" />
+                            {employee.title}
+                          </div>
+                        )}
+                        <div className="flex items-center text-muted-foreground">
+                          <Building className="w-4 h-4 mr-2" />
+                          {employee.company}
+                        </div>
+                        {(employee.city || employee.country) && (
+                          <div className="flex items-center text-muted-foreground">
+                            <MapPin className="w-4 h-4 mr-2" />
+                            {[employee.city, employee.country].filter(Boolean).join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right space-y-1">
+                      {employee.email && (
+                        <Badge variant={employee.emailStatus === 'VALID' ? 'default' : 'secondary'}>
+                          {employee.emailStatus || 'Found'}
+                        </Badge>
+                      )}
+                      {employee.confidence && (
+                        <div className="text-xs text-muted-foreground">
+                          {employee.confidence}% confidence
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(employee.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {companyResults.errors && companyResults.errors.length > 0 && (
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <div className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                  Search Notes:
+                </div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+                  {companyResults.errors.map((error: string, index: number) => (
+                    <div key={index}>• {error}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Available Industries from GetProspect API */}
-      {!selectedIndustry && (availableIndustries as any)?.industries && (availableIndustries as any).industries.length > 0 && (
+      {!selectedIndustry && (availableIndustries as any)?.industries && Array.isArray((availableIndustries as any).industries) && (availableIndustries as any).industries.length > 0 && (
         <Card data-testid="available-industries-card">
           <CardHeader>
             <CardTitle className="flex items-center">

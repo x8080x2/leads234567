@@ -583,6 +583,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company domain search - finds multiple employees using common role patterns
+  app.post("/api/search/company", async (req, res) => {
+    try {
+      const { company, domain } = req.body;
+      
+      if (!company && !domain) {
+        return res.status(400).json({ error: "Company name or domain is required" });
+      }
+
+      const apiConfig = await storage.getActiveApiConfig();
+      if (!apiConfig) {
+        return res.status(400).json({ error: "API key not configured" });
+      }
+
+      const searchTarget = company || domain;
+      
+      // Common roles to search for at any company
+      const commonRoles = [
+        { firstName: "CEO", lastName: "" },
+        { firstName: "President", lastName: "" },
+        { firstName: "Sales", lastName: "Manager" },
+        { firstName: "Marketing", lastName: "Director" },
+        { firstName: "Project", lastName: "Manager" },
+        { firstName: "Operations", lastName: "Manager" },
+        { firstName: "Business", lastName: "Development" },
+        { firstName: "Customer", lastName: "Service" },
+        { firstName: "Human", lastName: "Resources" },
+        { firstName: "Finance", lastName: "Manager" },
+        { firstName: "IT", lastName: "Manager" },
+        { firstName: "Construction", lastName: "Supervisor" },
+        { firstName: "Regional", lastName: "Manager" },
+        { firstName: "Area", lastName: "Manager" },
+        { firstName: "Branch", lastName: "Manager" }
+      ];
+
+      // Common first names to try with the company
+      const commonNames = [
+        { firstName: "John", lastName: "Smith" },
+        { firstName: "Mike", lastName: "Johnson" },
+        { firstName: "Sarah", lastName: "Wilson" },
+        { firstName: "David", lastName: "Brown" },
+        { firstName: "Jennifer", lastName: "Davis" },
+        { firstName: "Michael", lastName: "Miller" },
+        { firstName: "Lisa", lastName: "Anderson" },
+        { firstName: "Robert", lastName: "Taylor" }
+      ];
+
+      const allSearches = [...commonRoles, ...commonNames];
+      const results = [];
+      const errors = [];
+
+      // Search with rate limiting (1 second between requests)
+      for (let i = 0; i < Math.min(allSearches.length, 20); i++) {
+        const search = allSearches[i];
+        
+        try {
+          const result = await findEmailWithGetProspect(
+            search.firstName,
+            search.lastName || "",
+            searchTarget,
+            apiConfig.apiKey
+          );
+
+          if (!result.error && result.email) {
+            const searchRecord = await storage.createEmailSearch({
+              firstName: search.firstName,
+              lastName: search.lastName || "",
+              fullName: result.fullName || `${search.firstName} ${search.lastName || ""}`,
+              company: searchTarget,
+              email: result.email,
+              confidence: result.confidence || null,
+              title: result.title || null,
+              domain: result.domain || null,
+              industry: result.industry || null,
+              website: result.website || null,
+              companySize: result.companySize || null,
+              country: result.country || null,
+              city: result.city || null,
+              emailStatus: result.emailStatus || null,
+              status: "found",
+              errorMessage: null,
+              searchType: "company_domain",
+              batchId: null,
+            });
+
+            results.push(searchRecord);
+          }
+          
+          // Rate limiting - 1 second between requests
+          if (i < allSearches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          
+        } catch (error) {
+          errors.push(`${search.firstName} ${search.lastName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        company: searchTarget,
+        totalFound: results.length,
+        results,
+        errors: errors.length > 0 ? errors : undefined
+      });
+      
+    } catch (error) {
+      res.status(400).json({ 
+        error: error instanceof Error ? error.message : "Company search failed" 
+      });
+    }
+  });
+
   // Clear search results
   app.delete("/api/searches", async (req, res) => {
     try {
