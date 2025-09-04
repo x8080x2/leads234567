@@ -107,7 +107,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
       </Card>
 
       {/* Available Industries from GetProspect API */}
-      {!selectedIndustry && availableIndustries?.industries && (
+      {!selectedIndustry && availableIndustries?.industries && availableIndustries.industries.length > 0 && (
         <Card data-testid="available-industries-card">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -115,13 +115,13 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
               Available Industries
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Select from {availableIndustries.industries.length} industries supported by GetProspect API
+              Select from {availableIndustries?.industries?.length || 0} industries supported by GetProspect API
             </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {availableIndustries.industries.map((industry: string) => {
-                const hasData = industryStats?.industries?.find((stat: any) => stat.industry === industry);
+              {(availableIndustries?.industries || []).map((industry: string) => {
+                const hasData = (industryStats as any)?.industries?.find((stat: any) => stat.industry === industry);
                 return (
                   <div
                     key={industry}

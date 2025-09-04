@@ -19,6 +19,74 @@ interface GetProspectResponse {
   error?: string;
 }
 
+// Enhanced search with GetProspect API - Contact search with filters
+async function searchContactsWithGetProspect(
+  searchParams: {
+    firstName?: string;
+    lastName?: string;
+    company?: string;
+    industry?: string;
+    jobTitle?: string;
+    location?: string;
+    limit?: number;
+  },
+  apiKey: string
+): Promise<GetProspectResponse[]> {
+  // Build search URL with filters
+  const baseUrl = 'https://api.getprospect.com/public/v1/search/contacts';
+  const params = new URLSearchParams();
+  params.append('apiKey', apiKey);
+  
+  if (searchParams.firstName) params.append('first_name', searchParams.firstName);
+  if (searchParams.lastName) params.append('last_name', searchParams.lastName);
+  if (searchParams.company) params.append('company', searchParams.company);
+  if (searchParams.industry) params.append('industry', searchParams.industry);
+  if (searchParams.jobTitle) params.append('job_title', searchParams.jobTitle);
+  if (searchParams.location) params.append('location', searchParams.location);
+  if (searchParams.limit) params.append('limit', searchParams.limit.toString());
+
+  const url = `${baseUrl}?${params.toString()}`;
+
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("Invalid API key");
+      } else if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      } else if (response.status === 402) {
+        throw new Error("Insufficient credits. Please upgrade your plan.");
+      } else {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    const data = await response.json();
+    
+    // Handle multiple contacts result
+    if (data.contacts && Array.isArray(data.contacts)) {
+      return data.contacts.map((contact: any) => ({
+        email: contact.email,
+        confidence: contact.confidence || contact.score || 0,
+        title: contact.title || contact.position,
+        domain: contact.domain || contact.company,
+        fullName: contact.full_name || contact.fullName || `${contact.first_name || ''} ${contact.last_name || ''}`,
+        industry: contact.industry,
+        website: contact.website,
+        companySize: contact.company_size || contact.companySize,
+        country: contact.country,
+        city: contact.city,
+        emailStatus: contact.email_status || contact.emailStatus || 'UNKNOWN',
+      }));
+    }
+    
+    return [];
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Search failed");
+  }
+}
+
 async function findEmailWithGetProspect(
   firstName: string,
   lastName: string,
@@ -448,6 +516,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ industries: results });
     } catch (error) {
       res.status(500).json({ error: "Failed to get industry analytics" });
+    }
+  });
+
+  // Advanced contact search with GetProspect API
+  app.post("/api/search/advanced", async (req, res) => {
+    try {
+      const { 
+        firstName, 
+        lastName, 
+        company, 
+        industry, 
+        jobTitle, 
+        location, 
+        limit = 10 
+      } = req.body;
+      
+      const apiConfig = await storage.getActiveApiConfig();
+      if (!apiConfig) {
+        return res.status(400).json({ error: "API key not configured" });
+      }
+
+      const results = await searchContactsWithGetProspect({
+        firstName,
+        lastName,
+        company,
+        industry,
+        jobTitle,
+        location,
+        limit: Math.min(limit, 50) // Limit to 50 results
+      }, apiConfig.apiKey);
+
+      // Save results to database
+      const searchRecords = await Promise.all(results.map(result => 
+        storage.createEmailSearch({
+          firstName: firstName || result.fullName?.split(' ')[0] || "Unknown",
+          lastName: lastName || result.fullName?.split(' ')[1] || "Unknown",
+          fullName: result.fullName || null,
+          company: company || result.domain || "Unknown",
+          email: result.email || null,
+          confidence: result.confidence || null,
+          title: result.title || null,
+          domain: result.domain || null,
+          industry: result.industry || null,
+          website: result.website || null,
+          companySize: result.companySize || null,
+          country: result.country || null,
+          city: result.city || null,
+          emailStatus: result.emailStatus || null,
+          status: result.email ? "found" : "not_found",
+          errorMessage: null,
+          searchType: "advanced",
+          batchId: null,
+        })
+      ));
+
+      res.json({
+        success: true,
+        results: searchRecords,
+        totalFound: results.length
+      });
+    } catch (error) {
+      res.status(400).json({ 
+        error: error instanceof Error ? error.message : "Advanced search failed" 
+      });
     }
   });
 

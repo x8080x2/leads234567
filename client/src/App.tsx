@@ -5,12 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import EmailFinder from "@/pages/email-finder";
 import IndustrySearchPage from "@/pages/industry-search";
+import AdvancedSearchPage from "@/pages/advanced-search";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={EmailFinder} />
       <Route path="/industry-search" component={IndustrySearchPage} />
+      <Route path="/advanced-search" component={AdvancedSearchPage} />
       <Route component={EmailFinder} />
     </Switch>
   );
