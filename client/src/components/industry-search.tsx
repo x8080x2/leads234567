@@ -266,7 +266,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                       )}
                       {employee.confidence && (
                         <div className="text-xs text-muted-foreground">
-                          {employee.confidence}% confidence
+                          {Math.round(employee.confidence)}% confidence
                         </div>
                       )}
                       {employee.createdAt && (

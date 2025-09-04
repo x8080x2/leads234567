@@ -425,7 +425,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Convert to array and add branch information
       const results = Array.from(companyStats.values()).map(stats => ({
-        ...stats,
+        company: stats.company,
+        industry: stats.industry,
+        website: stats.website,
+        companySize: stats.companySize,
+        country: stats.country,
+        city: stats.city,
+        employees: stats.employees.map(emp => ({
+          fullName: emp.fullName,
+          firstName: emp.firstName,
+          lastName: emp.lastName,
+          email: emp.email,
+          title: emp.title,
+          emailStatus: emp.emailStatus,
+          company: stats.company
+        })),
+        totalEmployees: stats.totalEmployees,
         branches: Array.from(stats.branches),
         branchCount: stats.branches.size
       }));
@@ -573,7 +588,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        results: searchRecords,
+        results: searchRecords.map(record => ({
+          id: record.id,
+          fullName: record.fullName,
+          firstName: record.firstName,
+          lastName: record.lastName,
+          email: record.email,
+          title: record.title,
+          company: record.company,
+          domain: record.domain,
+          industry: record.industry,
+          website: record.website,
+          companySize: record.companySize,
+          country: record.country,
+          city: record.city,
+          emailStatus: record.emailStatus,
+          confidence: record.confidence,
+          status: record.status,
+          createdAt: record.createdAt
+        })),
         totalFound: results.length
       });
     } catch (error) {
@@ -685,7 +718,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         company: searchTarget,
         totalFound: results.length,
-        results,
+        results: results.map(result => ({
+          id: result.id,
+          fullName: result.fullName,
+          firstName: result.firstName,
+          lastName: result.lastName,
+          email: result.email,
+          title: result.title,
+          company: result.company,
+          domain: result.domain,
+          industry: result.industry,
+          website: result.website,
+          companySize: result.companySize,
+          country: result.country,
+          city: result.city,
+          emailStatus: result.emailStatus,
+          confidence: result.confidence,
+          createdAt: result.createdAt
+        })),
         errors: errors.length > 0 ? errors : undefined
       });
       
