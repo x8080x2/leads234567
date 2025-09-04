@@ -32,25 +32,32 @@ async function searchContactsWithGetProspect(
   },
   apiKey: string
 ): Promise<GetProspectResponse[]> {
-  // Try people search with company filter
-  const baseUrl = 'https://api.getprospect.com/public/v1/people/search';
+  // Use the official GetProspect leads API endpoint
+  const baseUrl = 'https://api.getprospect.com/public/v1/leads';
   const params = new URLSearchParams();
-  params.append('apiKey', apiKey);
 
+  // Required parameter: domain (use company as domain)
   if (searchParams.company) {
-    params.append('company', searchParams.company);
+    params.append('domain', searchParams.company);
   }
-  if (searchParams.firstName) params.append('first_name', searchParams.firstName);
-  if (searchParams.lastName) params.append('last_name', searchParams.lastName);
-  if (searchParams.industry) params.append('industry', searchParams.industry);
+  
+  // Optional filters
   if (searchParams.jobTitle) params.append('job_title', searchParams.jobTitle);
   if (searchParams.location) params.append('location', searchParams.location);
-  if (searchParams.limit) params.append('limit', searchParams.limit.toString());
+  
+  // Pagination - use per_page instead of limit
+  if (searchParams.limit) params.append('per_page', searchParams.limit.toString());
 
   const url = `${baseUrl}?${params.toString()}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      }
+    });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -66,20 +73,23 @@ async function searchContactsWithGetProspect(
 
     const data = await response.json();
 
-    // Handle multiple contacts result
-    if (data.contacts && Array.isArray(data.contacts)) {
-      return data.contacts.map((contact: any) => ({
-        email: contact.email,
-        confidence: contact.confidence || contact.score || 0,
-        title: contact.title || contact.position,
-        domain: contact.domain || contact.company,
-        fullName: contact.full_name || contact.fullName || `${contact.first_name || ''} ${contact.last_name || ''}`,
-        industry: contact.industry,
-        website: contact.website,
-        companySize: contact.company_size || contact.companySize,
-        country: contact.country,
-        city: contact.city,
-        emailStatus: contact.email_status || contact.emailStatus || 'UNKNOWN',
+    // Handle the official API response structure: { "data": [...], "meta": {...} }
+    if (data.data && Array.isArray(data.data)) {
+      return data.data.map((lead: any) => ({
+        email: lead.email,
+        confidence: lead.confidence || 0,
+        title: lead.job_title,
+        domain: lead.domain,
+        fullName: `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        company: lead.company_name,
+        industry: lead.industry,
+        website: lead.website,
+        companySize: lead.company_size,
+        country: lead.country,
+        city: lead.city,
+        emailStatus: lead.email_status || 'UNKNOWN',
       }));
     }
 
