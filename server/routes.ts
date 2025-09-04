@@ -628,10 +628,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced company search - finds real employees using common names and titles
+  // Enhanced company search - finds real employees using GetProspect leads API with domain filter
   app.post("/api/search/company", async (req, res) => {
     try {
-      const { company, domain, limit = 10 } = req.body;
+      const { company, domain, limit = 20 } = req.body;
 
       if (!company && !domain) {
         return res.status(400).json({ error: "Company name or domain is required" });
@@ -642,89 +642,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "API key not configured" });
       }
 
-      const searchTarget = company || domain;
-
-      // Expanded list of real names and professional titles to find actual employees
-      const employeeSearchTerms = [
-        // Common first names with common surnames
-        { firstName: "John", lastName: "Smith" },
-        { firstName: "Sarah", lastName: "Johnson" }, 
-        { firstName: "Michael", lastName: "Williams" },
-        { firstName: "Jennifer", lastName: "Brown" },
-        { firstName: "David", lastName: "Jones" },
-        { firstName: "Lisa", lastName: "Garcia" },
-        { firstName: "Robert", lastName: "Miller" },
-        { firstName: "Maria", lastName: "Davis" },
-        { firstName: "James", lastName: "Rodriguez" },
-        { firstName: "Amanda", lastName: "Wilson" },
-        { firstName: "Christopher", lastName: "Martinez" },
-        { firstName: "Ashley", lastName: "Anderson" },
-        { firstName: "Matthew", lastName: "Taylor" },
-        { firstName: "Michelle", lastName: "Thomas" },
-        { firstName: "Daniel", lastName: "Hernandez" },
-        { firstName: "Emily", lastName: "Moore" },
-        { firstName: "Joshua", lastName: "Martin" },
-        { firstName: "Jessica", lastName: "Jackson" },
-        { firstName: "Andrew", lastName: "Thompson" },
-        { firstName: "Nicole", lastName: "White" }
-      ];
-
-      const results = [];
-      const errors = [];
-      let maxSearches = Math.min(employeeSearchTerms.length, limit || 10);
-
-      // Search with rate limiting (1 second between requests)
-      for (let i = 0; i < maxSearches; i++) {
-        const search = employeeSearchTerms[i];
-
-        try {
-          const result = await findEmailWithGetProspect(
-            search.firstName,
-            search.lastName || "",
-            searchTarget,
-            apiConfig.apiKey
-          );
-
-          if (!result.error && result.email) {
-            const searchRecord = await storage.createEmailSearch({
-            firstName: search.firstName,
-            lastName: search.lastName || "",
-            fullName: result.fullName || `${search.firstName} ${search.lastName || ""}`.trim(),
-            company: searchTarget,
-            email: result.email,
-            confidence: result.confidence ? Math.round(result.confidence) : null,
-            title: result.title || null,
-            domain: result.domain || searchTarget,
-            industry: result.industry || null,
-            website: result.website || null,
-            companySize: result.companySize || null,
-            country: result.country || null,
-            city: result.city || null,
-            emailStatus: result.emailStatus || "VALID",
-            status: "found",
-            errorMessage: null,
-            searchType: "company_domain",
-            batchId: null,
-          });
-
-            results.push(searchRecord);
-          }
-
-          // Rate limiting - 1 second between requests
-          if (i < maxSearches - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-
-        } catch (error) {
-          errors.push(`${search.firstName} ${search.lastName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+      // Clean domain - remove protocol and www
+      let searchDomain = domain || company;
+      if (searchDomain.includes('://')) {
+        searchDomain = searchDomain.split('://')[1];
       }
+      if (searchDomain.startsWith('www.')) {
+        searchDomain = searchDomain.substring(4);
+      }
+
+      // Use GetProspect leads API with domain filter
+      const results = await searchContactsWithGetProspect({
+        company: searchDomain, // This maps to domain parameter in searchContactsWithGetProspect
+        limit: Math.min(limit, 50)
+      }, apiConfig.apiKey);
+
+      // Save results to database
+      const searchRecords = await Promise.all(results.map(result => 
+        storage.createEmailSearch({
+          firstName: result.firstName || result.fullName?.split(' ')[0] || "Unknown",
+          lastName: result.lastName || result.fullName?.split(' ').slice(1).join(' ') || "",
+          fullName: result.fullName || null,
+          company: result.company || searchDomain,
+          email: result.email || null,
+          confidence: result.confidence ? Math.round(result.confidence) : null,
+          title: result.title || null,
+          domain: result.domain || searchDomain,
+          industry: result.industry || null,
+          website: result.website || null,
+          companySize: result.companySize || null,
+          country: result.country || null,
+          city: result.city || null,
+          emailStatus: result.emailStatus || null,
+          status: result.email ? "found" : "not_found",
+          errorMessage: null,
+          searchType: "company_domain",
+          batchId: null,
+        })
+      ));
 
       res.json({
         success: true,
-        company: searchTarget,
-        totalFound: results.length,
-        results: results.map(result => ({
+        company: company || searchDomain,
+        domain: searchDomain,
+        totalFound: searchRecords.length,
+        results: searchRecords.map(result => ({
           id: result.id,
           fullName: result.fullName,
           firstName: result.firstName,
@@ -741,8 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailStatus: result.emailStatus,
           confidence: result.confidence,
           createdAt: result.createdAt
-        })),
-        errors: errors.length > 0 ? errors : undefined
+        }))
       });
 
     } catch (error) {
