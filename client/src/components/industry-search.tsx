@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Building, Users, MapPin, Globe, Search, TrendingUp } from "lucide-react";
+import { Building, Building2, Users, MapPin, Globe, Search, TrendingUp } from "lucide-react";
 
 interface IndustrySearchProps {
   onCompanySelect?: (company: any) => void;
@@ -40,8 +40,14 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
 
-  // Fetch industry statistics
-  const { data: industriesData } = useQuery({
+  // Fetch available industries from GetProspect API
+  const { data: availableIndustries } = useQuery({
+    queryKey: ["/api/industries/available"],
+    enabled: !selectedIndustry,
+  });
+
+  // Fetch industry statistics from search history
+  const { data: industryStats } = useQuery({
     queryKey: ["/api/analytics/industries"],
     enabled: !selectedIndustry,
   });
@@ -100,38 +106,38 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
         </CardContent>
       </Card>
 
-      {/* Available Industries */}
-      {!selectedIndustry && industriesData?.industries && (
-        <Card>
+      {/* Available Industries from GetProspect API */}
+      {!selectedIndustry && availableIndustries?.industries && (
+        <Card data-testid="available-industries-card">
           <CardHeader>
-            <CardTitle>Available Industries</CardTitle>
+            <CardTitle className="flex items-center">
+              <Building2 className="text-primary mr-2" />
+              Available Industries
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Select from {availableIndustries.industries.length} industries supported by GetProspect API
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {industriesData.industries.map((industry: any) => (
-                <div
-                  key={industry.industry}
-                  className="p-4 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                  onClick={() => handleIndustrySelect(industry.industry)}
-                  data-testid={`industry-card-${industry.industry}`}
-                >
-                  <h3 className="font-medium text-foreground">{industry.industry}</h3>
-                  <div className="mt-2 space-y-1">
-                    <div className="text-sm text-muted-foreground">
-                      <Building className="w-4 h-4 inline mr-1" />
-                      {industry.totalCompanies} companies
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <Users className="w-4 h-4 inline mr-1" />
-                      {industry.totalContacts} contacts
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4 inline mr-1" />
-                      {industry.totalLocations} locations
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {availableIndustries.industries.map((industry: string) => {
+                const hasData = industryStats?.industries?.find((stat: any) => stat.industry === industry);
+                return (
+                  <div
+                    key={industry}
+                    className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                    onClick={() => handleIndustrySelect(industry)}
+                    data-testid={`industry-option-${industry.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <div className="font-medium text-sm group-hover:text-primary transition-colors">{industry}</div>
+                    {hasData && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {hasData.totalContacts} contacts • {hasData.totalCompanies} companies
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

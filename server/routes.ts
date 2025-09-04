@@ -372,7 +372,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get industry statistics
+  // Get available industries from GetProspect API standards
+  app.get("/api/industries/available", async (req, res) => {
+    try {
+      // Comprehensive list of industries supported by GetProspect API
+      const industries = [
+        "Technology", "Software", "Information Technology", "Computer Software",
+        "Healthcare", "Medical Devices", "Biotechnology", "Pharmaceuticals",
+        "Financial Services", "Banking", "Insurance", "Investment Banking",
+        "Real Estate", "Construction", "Architecture", "Engineering",
+        "Manufacturing", "Automotive", "Aerospace", "Industrial Automation",
+        "Retail", "E-commerce", "Consumer Goods", "Fashion", "Apparel",
+        "Education", "Higher Education", "E-Learning", "Training",
+        "Marketing", "Advertising", "Public Relations", "Digital Marketing",
+        "Consulting", "Management Consulting", "Business Services",
+        "Legal", "Law Firms", "Legal Services",
+        "Food & Beverage", "Restaurant", "Hospitality", "Travel", "Tourism",
+        "Energy", "Oil & Gas", "Renewable Energy", "Utilities",
+        "Transportation", "Logistics", "Supply Chain", "Shipping",
+        "Media", "Entertainment", "Publishing", "Broadcasting",
+        "Telecommunications", "Internet", "Mobile",
+        "Agriculture", "Mining", "Chemicals", "Paper & Forest Products",
+        "Government", "Non-profit", "Defense", "Security",
+        "Sports", "Fitness", "Wellness", "Beauty", "Personal Care"
+      ];
+      
+      res.json({ industries: industries.sort() });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get available industries" });
+    }
+  });
+
+  // Get industry statistics from search history
   app.get("/api/analytics/industries", async (req, res) => {
     try {
       const searches = await storage.getEmailSearches(1000, 0);
