@@ -5,7 +5,8 @@ import { z } from "zod";
 
 export const emailSearches = pgTable("email_searches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   company: text("company").notNull(),
   email: text("email"),
   confidence: integer("confidence"),

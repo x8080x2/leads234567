@@ -13,10 +13,12 @@ interface GetProspectResponse {
 }
 
 async function findEmailWithGetProspect(
-  name: string,
+  firstName: string,
+  lastName: string,
   company: string,
   apiKey: string
 ): Promise<GetProspectResponse> {
+  const name = `${firstName} ${lastName}`;
   const url = `https://api.getprospect.com/public/v1/email/find?name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}&apiKey=${apiKey}`;
 
   try {
@@ -98,13 +100,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await findEmailWithGetProspect(
-        validatedData.name,
+        validatedData.firstName,
+        validatedData.lastName,
         validatedData.company,
         apiConfig.apiKey
       );
 
       const searchRecord = await storage.createEmailSearch({
-        name: validatedData.name,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
         company: validatedData.company,
         email: result.email || null,
         confidence: result.confidence || null,
@@ -160,13 +164,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const validatedContact = singleSearchSchema.parse(contact);
             const result = await findEmailWithGetProspect(
-              validatedContact.name,
+              validatedContact.firstName,
+              validatedContact.lastName,
               validatedContact.company,
               apiConfig.apiKey
             );
 
             await storage.createEmailSearch({
-              name: validatedContact.name,
+              firstName: validatedContact.firstName,
+              lastName: validatedContact.lastName,
               company: validatedContact.company,
               email: result.email || null,
               confidence: result.confidence || null,
@@ -194,7 +200,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (error) {
             processed++;
             await storage.createEmailSearch({
-              name: contact.name || "Unknown",
+              firstName: contact.firstName || "Unknown",
+              lastName: contact.lastName || "Unknown",
               company: contact.company || "Unknown",
               email: null,
               confidence: null,
