@@ -121,10 +121,10 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
 
     // Determine if it's a domain or company name
     const isDomain = companyDomain.includes('.') || companyDomain.includes('www');
-    const searchData = isDomain 
+    const searchData = isDomain
       ? { domain: companyDomain.replace(/^https?:\/\//, '').replace(/^www\./, '') }
       : { company: companyDomain };
-    
+
     companySearchMutation.mutate(searchData);
   };
 
@@ -180,8 +180,8 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
               onKeyDown={(e) => e.key === "Enter" && handleCompanySearch()}
               data-testid="input-company-domain"
             />
-            <Button 
-              onClick={handleCompanySearch} 
+            <Button
+              onClick={handleCompanySearch}
               disabled={!companyDomain.trim() || companySearchMutation.isPending}
             >
               {companySearchMutation.isPending ? (
@@ -266,7 +266,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                       )}
                       {employee.confidence && (
                         <div className="text-xs text-muted-foreground">
-                          {Math.round(employee.confidence)}% confidence
+                          {typeof employee.confidence === 'number' ? Math.round(employee.confidence) : Math.round(Number(employee.confidence) || 0)}% confidence
                         </div>
                       )}
                       {employee.createdAt && (
@@ -279,7 +279,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                 </div>
               ))}
             </div>
-            
+
             {companyResults.errors && companyResults.errors.length > 0 && (
               <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <div className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
@@ -296,7 +296,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
         </Card>
       )}
 
-      
+
 
       {/* Industry Search Results */}
       {selectedIndustry && (
@@ -358,7 +358,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                               </a>
                             </div>
                           )}
-                          
+
                           {company.companySize && (
                             <div className="flex items-center text-sm">
                               <Users className="w-4 h-4 mr-2 text-green-500" />
@@ -438,7 +438,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                                   )}
                                   {employee.confidence && (
                                     <div className="text-xs text-muted-foreground">
-                                      {typeof employee.confidence === 'number' ? Math.round(employee.confidence) : employee.confidence}%
+                                      {typeof employee.confidence === 'number' ? Math.round(employee.confidence) : Math.round(Number(employee.confidence) || 0)}% confidence
                                     </div>
                                   )}
                                 </div>
