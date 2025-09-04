@@ -7,11 +7,18 @@ export const emailSearches = pgTable("email_searches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  fullName: text("full_name"),
   company: text("company").notNull(),
   email: text("email"),
   confidence: integer("confidence"),
   title: text("title"),
   domain: text("domain"),
+  industry: text("industry"),
+  website: text("website"),
+  companySize: text("company_size"),
+  country: text("country"),
+  city: text("city"),
+  emailStatus: text("email_status"), // 'VALID', 'INVALID', 'UNKNOWN'
   status: text("status").notNull(), // 'found', 'not_found', 'error'
   errorMessage: text("error_message"),
   searchType: text("search_type").notNull(), // 'single', 'batch'

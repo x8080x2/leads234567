@@ -9,6 +9,13 @@ interface GetProspectResponse {
   confidence?: number;
   title?: string;
   domain?: string;
+  fullName?: string;
+  industry?: string;
+  website?: string;
+  companySize?: string;
+  country?: string;
+  city?: string;
+  emailStatus?: string;
   error?: string;
 }
 
@@ -45,6 +52,13 @@ async function findEmailWithGetProspect(
         confidence: data.confidence || data.score || 0,
         title: data.title || data.position,
         domain: data.domain || company,
+        fullName: data.full_name || data.fullName || `${firstName} ${lastName}`,
+        industry: data.industry,
+        website: data.website,
+        companySize: data.company_size || data.companySize,
+        country: data.country,
+        city: data.city,
+        emailStatus: data.email_status || data.emailStatus || 'UNKNOWN',
       };
     } else {
       return {
@@ -109,11 +123,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchRecord = await storage.createEmailSearch({
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
+        fullName: result.fullName || null,
         company: validatedData.company,
         email: result.email || null,
         confidence: result.confidence || null,
         title: result.title || null,
         domain: result.domain || null,
+        industry: result.industry || null,
+        website: result.website || null,
+        companySize: result.companySize || null,
+        country: result.country || null,
+        city: result.city || null,
+        emailStatus: result.emailStatus || null,
         status: result.error ? "not_found" : "found",
         errorMessage: result.error || null,
         searchType: "single",
@@ -173,11 +194,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.createEmailSearch({
               firstName: validatedContact.firstName,
               lastName: validatedContact.lastName,
+              fullName: result.fullName || null,
               company: validatedContact.company,
               email: result.email || null,
               confidence: result.confidence || null,
               title: result.title || null,
               domain: result.domain || null,
+              industry: result.industry || null,
+              website: result.website || null,
+              companySize: result.companySize || null,
+              country: result.country || null,
+              city: result.city || null,
+              emailStatus: result.emailStatus || null,
               status: result.error ? "not_found" : "found",
               errorMessage: result.error || null,
               searchType: "batch",
@@ -202,11 +230,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.createEmailSearch({
               firstName: contact.firstName || "Unknown",
               lastName: contact.lastName || "Unknown",
+              fullName: null,
               company: contact.company || "Unknown",
               email: null,
               confidence: null,
               title: null,
               domain: null,
+              industry: null,
+              website: null,
+              companySize: null,
+              country: null,
+              city: null,
+              emailStatus: null,
               status: "error",
               errorMessage: "Invalid contact data",
               searchType: "batch",
@@ -267,6 +302,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ results });
     } catch (error) {
       res.status(500).json({ error: "Failed to get batch results" });
+    }
+  });
+
+  // Industry-based search endpoint
+  app.get("/api/search/industry", async (req, res) => {
+    try {
+      const industry = req.query.industry as string;
+      
+      if (!industry) {
+        return res.status(400).json({ error: "Industry parameter is required" });
+      }
+
+      // Get searches filtered by industry
+      const searches = await storage.getEmailSearches(100, 0);
+      const industryResults = searches.filter(search => 
+        search.industry && search.industry.toLowerCase().includes(industry.toLowerCase())
+      );
+
+      // Group by company and calculate statistics
+      const companyStats = new Map();
+      
+      industryResults.forEach(search => {
+        const companyKey = search.company.toLowerCase();
+        if (!companyStats.has(companyKey)) {
+          companyStats.set(companyKey, {
+            company: search.company,
+            industry: search.industry,
+            website: search.website,
+            companySize: search.companySize,
+            country: search.country,
+            city: search.city,
+            employees: [],
+            totalEmployees: 0,
+            branches: new Set()
+          });
+        }
+        
+        const stats = companyStats.get(companyKey);
+        stats.employees.push({
+          fullName: search.fullName,
+          firstName: search.firstName,
+          lastName: search.lastName,
+          email: search.email,
+          title: search.title,
+          emailStatus: search.emailStatus
+        });
+        stats.totalEmployees = stats.employees.length;
+        
+        if (search.city && search.country) {
+          stats.branches.add(`${search.city}, ${search.country}`);
+        }
+      });
+
+      // Convert to array and add branch information
+      const results = Array.from(companyStats.values()).map(stats => ({
+        ...stats,
+        branches: Array.from(stats.branches),
+        branchCount: stats.branches.size
+      }));
+
+      res.json({ 
+        industry,
+        totalCompanies: results.length,
+        companies: results 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to search by industry" });
+    }
+  });
+
+  // Get industry statistics
+  app.get("/api/analytics/industries", async (req, res) => {
+    try {
+      const searches = await storage.getEmailSearches(1000, 0);
+      
+      const industryStats = new Map();
+      
+      searches.forEach(search => {
+        if (search.industry) {
+          const industry = search.industry;
+          if (!industryStats.has(industry)) {
+            industryStats.set(industry, {
+              industry,
+              totalContacts: 0,
+              companies: new Set(),
+              validEmails: 0,
+              locations: new Set()
+            });
+          }
+          
+          const stats = industryStats.get(industry);
+          stats.totalContacts++;
+          stats.companies.add(search.company);
+          
+          if (search.emailStatus === 'VALID') {
+            stats.validEmails++;
+          }
+          
+          if (search.city && search.country) {
+            stats.locations.add(`${search.city}, ${search.country}`);
+          }
+        }
+      });
+
+      const results = Array.from(industryStats.values()).map(stats => ({
+        ...stats,
+        totalCompanies: stats.companies.size,
+        totalLocations: stats.locations.size,
+        companies: undefined,
+        locations: undefined
+      }));
+
+      res.json({ industries: results });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get industry analytics" });
     }
   });
 

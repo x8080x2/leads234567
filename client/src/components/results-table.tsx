@@ -52,12 +52,20 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
     }
 
     const csvData = searches.map(search => ({
-      name: search.name,
+      full_name: search.fullName || `${search.firstName} ${search.lastName}`,
+      first_name: search.firstName,
+      last_name: search.lastName,
       company: search.company,
       email: search.email || "",
       confidence: search.confidence || "",
       title: search.title || "",
       domain: search.domain || "",
+      industry: search.industry || "",
+      website: search.website || "",
+      company_size: search.companySize || "",
+      country: search.country || "",
+      city: search.city || "",
+      email_status: search.emailStatus || "",
       status: search.status,
       search_date: typeof search.createdAt === 'string' ? search.createdAt.split('T')[0] : search.createdAt.toISOString().split('T')[0],
     }));
@@ -198,10 +206,13 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Company
+                  Company Info
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Confidence
+                  Location
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
@@ -211,7 +222,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
             <tbody className="bg-card divide-y divide-border">
               {searches.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center">
+                  <td colSpan={6} className="px-6 py-8 text-center">
                     <div className="text-muted-foreground">
                       <Table className="w-8 h-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">No search results yet</p>
@@ -237,29 +248,50 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-foreground">
-                            {search.name}
+                            {search.fullName || `${search.firstName} ${search.lastName}`}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {search.title || "No title"}
                           </div>
+                          {search.industry && (
+                            <div className="text-xs text-blue-600 dark:text-blue-400">
+                              {search.industry}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {search.email ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-foreground font-mono">
-                            {search.email}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => copyToClipboard(search.email!, "Email")}
-                            data-testid={`button-copy-email-${search.id}`}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-foreground font-mono">
+                              {search.email}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyToClipboard(search.email!, "Email")}
+                              data-testid={`button-copy-email-${search.id}`}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {search.emailStatus && (
+                            <div className="mt-1">
+                              <Badge 
+                                variant={search.emailStatus === 'VALID' ? 'default' : 'secondary'}
+                                className={`text-xs ${
+                                  search.emailStatus === 'VALID' 
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                }`}
+                              >
+                                {search.emailStatus}
+                              </Badge>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">
@@ -268,13 +300,47 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-foreground">{search.company}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-foreground font-medium">{search.company}</div>
+                      <div className="text-xs text-muted-foreground">
                         {search.domain || search.company}
                       </div>
+                      {search.website && (
+                        <div className="text-xs text-blue-600 dark:text-blue-400">
+                          {search.website}
+                        </div>
+                      )}
+                      {search.companySize && (
+                        <div className="text-xs text-green-600 dark:text-green-400">
+                          {search.companySize} employees
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getConfidenceBadge(search)}
+                      {search.city && search.country ? (
+                        <div>
+                          <div className="text-sm text-foreground">{search.city}</div>
+                          <div className="text-xs text-muted-foreground">{search.country}</div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not available</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="space-y-1">
+                        {getConfidenceBadge(search)}
+                        {search.emailStatus && (
+                          <Badge 
+                            variant={search.emailStatus === 'VALID' ? 'default' : 'secondary'}
+                            className={`text-xs ${
+                              search.emailStatus === 'VALID' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                            }`}
+                          >
+                            {search.emailStatus}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       <div className="flex items-center space-x-2">

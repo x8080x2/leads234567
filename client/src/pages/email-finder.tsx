@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import ApiConfigCard from "@/components/api-config-card";
 import SingleSearchCard from "@/components/single-search-card";
 import BatchSearchCard from "@/components/batch-search-card";
 import ResultsTable from "@/components/results-table";
 import SearchHistory from "@/components/search-history";
-import { Settings, Mail, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Settings, Mail, CreditCard, TrendingUp } from "lucide-react";
 
 export default function EmailFinder() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [, setLocation] = useLocation();
 
   const { data: configData } = useQuery({
     queryKey: ["/api/config"],
@@ -43,6 +46,14 @@ export default function EmailFinder() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/industry-search")}
+                data-testid="button-industry-search"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Industry Search
+              </Button>
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground flex items-center">
                   <CreditCard className="w-4 h-4 mr-1" />
