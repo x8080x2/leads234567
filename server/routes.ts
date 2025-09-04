@@ -32,28 +32,30 @@ async function searchContactsWithGetProspect(
   },
   apiKey: string
 ): Promise<GetProspectResponse[]> {
-  // Use the correct GetProspect API endpoint for domain search
-  const baseUrl = 'https://api.getprospect.com/v2/people/search';
+  // Use GetProspect public v1 API for company domain search
+  const baseUrl = 'https://api.getprospect.com/public/v1/email/find';
   
-  const requestBody: any = {
-    company_domain: searchParams.company,
-    limit: searchParams.limit || 10
-  };
+  const urlParams = new URLSearchParams();
+  urlParams.append('apiKey', apiKey);
+  
+  if (searchParams.company) {
+    urlParams.append('company', searchParams.company);
+  }
+  
+  if (searchParams.firstName && searchParams.lastName) {
+    urlParams.append('name', `${searchParams.firstName} ${searchParams.lastName}`);
+  } else if (searchParams.firstName || searchParams.lastName) {
+    urlParams.append('name', searchParams.firstName || searchParams.lastName || '');
+  }
 
-  // Add optional filters if provided
-  if (searchParams.jobTitle) requestBody.title = searchParams.jobTitle;
-  if (searchParams.location) requestBody.location = searchParams.location;
-  if (searchParams.firstName) requestBody.first_name = searchParams.firstName;
-  if (searchParams.lastName) requestBody.last_name = searchParams.lastName;
+  const searchUrl = `${baseUrl}?${urlParams.toString()}`;
 
   try {
-    const response = await fetch(baseUrl, {
-      method: 'POST',
+    const response = await fetch(searchUrl, {
+      method: 'GET',
       headers: {
-        'X-API-Key': apiKey,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
+      }
     });
 
     if (!response.ok) {
@@ -70,24 +72,24 @@ async function searchContactsWithGetProspect(
 
     const data = await response.json();
 
-    // Handle the API response structure
-    if (data.people && Array.isArray(data.people)) {
-      return data.people.map((person: any) => ({
-        email: person.email,
-        confidence: person.confidence || 0,
-        title: person.position || person.job_title,
-        domain: person.domain,
-        fullName: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),
-        firstName: person.first_name,
-        lastName: person.last_name,
-        company: person.company || searchParams.company,
-        industry: person.industry,
-        website: person.website,
-        companySize: person.company_size,
-        country: person.country,
-        city: person.city,
-        emailStatus: person.email_status || 'UNKNOWN',
-      }));
+    // Handle the API response structure for public v1 API
+    if (data.email) {
+      return [{
+        email: data.email,
+        confidence: data.confidence || data.score || 0,
+        title: data.position || data.job_title || data.title,
+        domain: data.domain || searchParams.company,
+        fullName: data.name || `${searchParams.firstName || ''} ${searchParams.lastName || ''}`.trim(),
+        firstName: searchParams.firstName || data.firstName,
+        lastName: searchParams.lastName || data.lastName,
+        company: data.company || searchParams.company,
+        industry: data.industry,
+        website: data.website,
+        companySize: data.company_size || data.companySize,
+        country: data.country,
+        city: data.city,
+        emailStatus: data.email_status || data.status || 'VALID',
+      }];
     }
 
     return [];
@@ -102,22 +104,14 @@ async function findEmailWithGetProspect(
   company: string,
   apiKey: string
 ): Promise<GetProspectResponse> {
-  const url = 'https://api.getprospect.com/v1/people/email';
-  
-  const requestBody = {
-    first_name: firstName,
-    last_name: lastName,
-    domain: company
-  };
+  const url = `https://api.getprospect.com/public/v1/email/find?name=${encodeURIComponent(firstName + ' ' + lastName)}&company=${encodeURIComponent(company)}&apiKey=${apiKey}`;
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'X-API-Key': apiKey,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
+      }
     });
 
     if (!response.ok) {
