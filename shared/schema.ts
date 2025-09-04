@@ -5,8 +5,7 @@ import { z } from "zod";
 
 export const emailSearches = pgTable("email_searches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
+  name: text("name").notNull(),
   company: text("company").notNull(),
   email: text("email"),
   confidence: integer("confidence"),
@@ -54,8 +53,7 @@ export const insertBatchJobSchema = createInsertSchema(batchJobs).omit({
 });
 
 export const singleSearchSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  name: z.string().min(1, "Name is required"),
   company: z.string().min(1, "Company is required"),
 });
 

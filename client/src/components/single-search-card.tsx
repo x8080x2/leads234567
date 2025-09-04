@@ -11,8 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Search } from "lucide-react";
 
 const singleSearchSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  name: z.string().min(1, "Name is required"),
   company: z.string().min(1, "Company is required"),
 });
 
@@ -29,8 +28,7 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
   const form = useForm<SingleSearchForm>({
     resolver: zodResolver(singleSearchSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      name: "",
       company: "",
     },
   });
@@ -47,7 +45,7 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
       if (data.success) {
         toast({
           title: "Email Found Successfully",
-          description: `Found email for ${data.result.firstName} ${data.result.lastName}${data.result.confidence ? ` with ${data.result.confidence}% confidence` : ""}`,
+          description: `Found email for ${data.result.name}${data.result.confidence ? ` with ${data.result.confidence}% confidence` : ""}`,
         });
       } else {
         toast({
@@ -84,33 +82,15 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="firstName"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name *</FormLabel>
+                  <FormLabel>Full Name *</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="e.g., Alona"
-                      data-testid="input-first-name"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="e.g., Shalieieva"
-                      data-testid="input-last-name"
+                      placeholder="e.g., Alona Shalieieva"
+                      data-testid="input-name"
                     />
                   </FormControl>
                   <FormMessage />

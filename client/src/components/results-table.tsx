@@ -125,8 +125,12 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
     }
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (name: string) => {
+    const nameParts = name.split(' ');
+    if (nameParts.length >= 2) {
+      return `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -231,13 +235,13 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                         <div className="flex-shrink-0 h-10 w-10">
                           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                             <span className="text-sm font-medium text-primary">
-                              {getInitials(search.firstName, search.lastName)}
+                              {getInitials(search.name)}
                             </span>
                           </div>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-foreground">
-                            {search.firstName} {search.lastName}
+                            {search.name}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {search.title || "No title"}

@@ -13,8 +13,7 @@ export default function SearchHistory({ searches }: SearchHistoryProps) {
     .slice(0, 5)
     .filter((search, index, self) => 
       index === self.findIndex(s => 
-        s.firstName === search.firstName && 
-        s.lastName === search.lastName && 
+        s.name === search.name && 
         s.company === search.company
       )
     );
@@ -22,6 +21,12 @@ export default function SearchHistory({ searches }: SearchHistoryProps) {
   const formatTimeAgo = (date: Date | string) => {
     const now = new Date();
     const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return "Unknown";
+    }
+    
     const diffInHours = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) {
