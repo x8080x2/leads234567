@@ -48,6 +48,13 @@ export class MemStorage implements IStorage {
       domain: insertSearch.domain || null,
       errorMessage: insertSearch.errorMessage || null,
       batchId: insertSearch.batchId || null,
+      fullName: insertSearch.fullName || null,
+      industry: insertSearch.industry || null,
+      website: insertSearch.website || null,
+      companySize: insertSearch.companySize || null,
+      country: insertSearch.country || null,
+      city: insertSearch.city || null,
+      emailStatus: insertSearch.emailStatus || null,
     };
     this.emailSearches.set(id, search);
     return search;
