@@ -15,7 +15,7 @@ export default function EmailFinder() {
   });
 
   const { data: searchData, refetch: refetchSearches } = useQuery({
-    queryKey: ["/api/searches", refreshTrigger],
+    queryKey: ["/api/searches"],
   });
 
   const handleSearchComplete = () => {

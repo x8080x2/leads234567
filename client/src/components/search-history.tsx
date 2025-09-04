@@ -19,9 +19,10 @@ export default function SearchHistory({ searches }: SearchHistoryProps) {
       )
     );
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (date: Date | string) => {
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const diffInHours = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) {
       return "Just now";

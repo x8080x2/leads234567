@@ -60,7 +60,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
       title: search.title || "",
       domain: search.domain || "",
       status: search.status,
-      search_date: search.createdAt.toISOString().split('T')[0],
+      search_date: typeof search.createdAt === 'string' ? search.createdAt.split('T')[0] : search.createdAt.toISOString().split('T')[0],
     }));
 
     exportToCsv(csvData, `email-search-results-${new Date().toISOString().split('T')[0]}.csv`);
