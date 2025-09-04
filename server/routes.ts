@@ -71,20 +71,20 @@ async function searchContactsWithGetProspect(
     // Handle the API response structure
     if (data.people && Array.isArray(data.people)) {
       return data.people.map((person: any) => ({
-        email: lead.email,
-        confidence: lead.confidence || 0,
-        title: lead.position || lead.job_title,
-        domain: lead.domain,
-        fullName: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
-        firstName: lead.first_name,
-        lastName: lead.last_name,
-        company: lead.company || searchParams.company,
-        industry: lead.industry,
-        website: lead.website,
-        companySize: lead.company_size,
-        country: lead.country,
-        city: lead.city,
-        emailStatus: lead.email_status || 'UNKNOWN',
+        email: person.email,
+        confidence: person.confidence || 0,
+        title: person.position || person.job_title,
+        domain: person.domain,
+        fullName: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),
+        firstName: person.first_name,
+        lastName: person.last_name,
+        company: person.company || searchParams.company,
+        industry: person.industry,
+        website: person.website,
+        companySize: person.company_size,
+        country: person.country,
+        city: person.city,
+        emailStatus: person.email_status || 'UNKNOWN',
       }));
     }
 
