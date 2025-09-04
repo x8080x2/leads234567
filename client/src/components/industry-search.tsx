@@ -438,7 +438,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                                   )}
                                   {employee.confidence && (
                                     <div className="text-xs text-muted-foreground">
-                                      {employee.confidence}%
+                                      {typeof employee.confidence === 'number' ? Math.round(employee.confidence) : employee.confidence}%
                                     </div>
                                   )}
                                 </div>

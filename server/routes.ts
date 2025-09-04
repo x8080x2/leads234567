@@ -36,7 +36,7 @@ async function searchContactsWithGetProspect(
   const baseUrl = 'https://api.getprospect.com/public/v1/search/contacts';
   const params = new URLSearchParams();
   params.append('apiKey', apiKey);
-  
+
   if (searchParams.firstName) params.append('first_name', searchParams.firstName);
   if (searchParams.lastName) params.append('last_name', searchParams.lastName);
   if (searchParams.company) params.append('company', searchParams.company);
@@ -49,7 +49,7 @@ async function searchContactsWithGetProspect(
 
   try {
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error("Invalid API key");
@@ -63,7 +63,7 @@ async function searchContactsWithGetProspect(
     }
 
     const data = await response.json();
-    
+
     // Handle multiple contacts result
     if (data.contacts && Array.isArray(data.contacts)) {
       return data.contacts.map((contact: any) => ({
@@ -80,7 +80,7 @@ async function searchContactsWithGetProspect(
         emailStatus: contact.email_status || contact.emailStatus || 'UNKNOWN',
       }));
     }
-    
+
     return [];
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Search failed");
@@ -98,7 +98,7 @@ async function findEmailWithGetProspect(
 
   try {
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error("Invalid API key");
@@ -112,7 +112,7 @@ async function findEmailWithGetProspect(
     }
 
     const data = await response.json();
-    
+
     // Parse GetProspect response - adjust based on actual API response format
     if (data.email) {
       return {
@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = singleSearchSchema.parse(req.body);
       const apiConfig = await storage.getActiveApiConfig();
-      
+
       if (!apiConfig) {
         return res.status(400).json({ error: "API key not configured" });
       }
@@ -225,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/search/batch", async (req, res) => {
     try {
       const { fileName, contacts } = req.body;
-      
+
       if (!Array.isArray(contacts) || contacts.length === 0) {
         return res.status(400).json({ error: "No contacts provided" });
       }
@@ -377,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search/industry", async (req, res) => {
     try {
       const industry = req.query.industry as string;
-      
+
       if (!industry) {
         return res.status(400).json({ error: "Industry parameter is required" });
       }
@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Group by company and calculate statistics
       const companyStats = new Map();
-      
+
       industryResults.forEach(search => {
         const companyKey = search.company.toLowerCase();
         if (!companyStats.has(companyKey)) {
@@ -406,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             branches: new Set()
           });
         }
-        
+
         const stats = companyStats.get(companyKey);
         stats.employees.push({
           fullName: search.fullName,
@@ -417,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailStatus: search.emailStatus
         });
         stats.totalEmployees = stats.employees.length;
-        
+
         if (search.city && search.country) {
           stats.branches.add(`${search.city}, ${search.country}`);
         }
@@ -479,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Government", "Non-profit", "Defense", "Security",
         "Sports", "Fitness", "Wellness", "Beauty", "Personal Care"
       ];
-      
+
       res.json({ industries: industries.sort() });
     } catch (error) {
       res.status(500).json({ error: "Failed to get available industries" });
@@ -490,9 +490,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/industries", async (req, res) => {
     try {
       const searches = await storage.getEmailSearches(1000, 0);
-      
+
       const industryStats = new Map();
-      
+
       searches.forEach(search => {
         if (search.industry) {
           const industry = search.industry;
@@ -505,15 +505,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               locations: new Set()
             });
           }
-          
+
           const stats = industryStats.get(industry);
           stats.totalContacts++;
           stats.companies.add(search.company);
-          
+
           if (search.emailStatus === 'VALID') {
             stats.validEmails++;
           }
-          
+
           if (search.city && search.country) {
             stats.locations.add(`${search.city}, ${search.country}`);
           }
@@ -546,7 +546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location, 
         limit = 10 
       } = req.body;
-      
+
       const apiConfig = await storage.getActiveApiConfig();
       if (!apiConfig) {
         return res.status(400).json({ error: "API key not configured" });
@@ -620,7 +620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/search/company", async (req, res) => {
     try {
       const { company, domain } = req.body;
-      
+
       if (!company && !domain) {
         return res.status(400).json({ error: "Company name or domain is required" });
       }
@@ -631,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const searchTarget = company || domain;
-      
+
       // Common roles to search for at any company
       const commonRoles = [
         { firstName: "CEO", lastName: "" },
@@ -670,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Search with rate limiting (1 second between requests)
       for (let i = 0; i < Math.min(allSearches.length, 20); i++) {
         const search = allSearches[i];
-        
+
         try {
           const result = await findEmailWithGetProspect(
             search.firstName,
@@ -681,34 +681,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (!result.error && result.email) {
             const searchRecord = await storage.createEmailSearch({
-              firstName: search.firstName,
-              lastName: search.lastName || "",
-              fullName: result.fullName || `${search.firstName} ${search.lastName || ""}`,
-              company: searchTarget,
-              email: result.email,
-              confidence: result.confidence || null,
-              title: result.title || null,
-              domain: result.domain || null,
-              industry: result.industry || null,
-              website: result.website || null,
-              companySize: result.companySize || null,
-              country: result.country || null,
-              city: result.city || null,
-              emailStatus: result.emailStatus || null,
-              status: "found",
-              errorMessage: null,
-              searchType: "company_domain",
-              batchId: null,
-            });
+            firstName: search.firstName,
+            lastName: search.lastName || "",
+            fullName: result.fullName || `${search.firstName} ${search.lastName || ""}`.trim(),
+            company: searchTarget,
+            email: result.email,
+            confidence: result.confidence ? Math.round(result.confidence) : null,
+            title: result.title || null,
+            domain: result.domain || searchTarget,
+            industry: result.industry || null,
+            website: result.website || null,
+            companySize: result.companySize || null,
+            country: result.country || null,
+            city: result.city || null,
+            emailStatus: result.emailStatus || "VALID",
+            status: "found",
+            errorMessage: null,
+            searchType: "company_domain",
+            batchId: null,
+          });
 
             results.push(searchRecord);
           }
-          
+
           // Rate limiting - 1 second between requests
           if (i < allSearches.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
-          
+
         } catch (error) {
           errors.push(`${search.firstName} ${search.lastName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
@@ -738,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })),
         errors: errors.length > 0 ? errors : undefined
       });
-      
+
     } catch (error) {
       res.status(400).json({ 
         error: error instanceof Error ? error.message : "Company search failed" 
