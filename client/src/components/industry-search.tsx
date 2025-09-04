@@ -213,9 +213,9 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {companyResults.results.map((employee: any, index: number) => (
+              {(companyResults.results || []).map((employee: any, index: number) => (
                 <div
-                  key={employee.id}
+                  key={employee.id || index}
                   className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                   data-testid={`employee-result-${index}`}
                 >
@@ -223,7 +223,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                     <div className="space-y-2">
                       <div className="font-medium text-lg flex items-center">
                         <Users className="w-5 h-5 mr-2 text-primary" />
-                        {employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                        {employee.fullName || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'No name'}
                       </div>
                       <div className="space-y-1 text-sm">
                         {employee.email && (
@@ -242,12 +242,18 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                         )}
                         <div className="flex items-center text-muted-foreground">
                           <Building className="w-4 h-4 mr-2" />
-                          {employee.company}
+                          {employee.company || companyResults.company}
                         </div>
                         {(employee.city || employee.country) && (
                           <div className="flex items-center text-muted-foreground">
                             <MapPin className="w-4 h-4 mr-2" />
                             {[employee.city, employee.country].filter(Boolean).join(", ")}
+                          </div>
+                        )}
+                        {employee.domain && (
+                          <div className="flex items-center text-muted-foreground">
+                            <Globe className="w-4 h-4 mr-2" />
+                            {employee.domain}
                           </div>
                         )}
                       </div>
@@ -263,9 +269,11 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                           {employee.confidence}% confidence
                         </div>
                       )}
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(employee.createdAt).toLocaleDateString()}
-                      </div>
+                      {employee.createdAt && (
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(employee.createdAt).toLocaleDateString()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -341,10 +349,10 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                             <div className="flex items-center text-sm">
                               <Globe className="w-4 h-4 mr-2 text-blue-500" />
                               <a
-                                href={company.website}
+                                href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
+                                className="text-blue-600 hover:underline truncate"
                               >
                                 {company.website}
                               </a>
@@ -354,25 +362,32 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                           {company.companySize && (
                             <div className="flex items-center text-sm">
                               <Users className="w-4 h-4 mr-2 text-green-500" />
-                              <span>{company.companySize} employees</span>
+                              <span>{company.companySize}</span>
                             </div>
                           )}
 
                           <div className="flex items-center text-sm">
                             <Users className="w-4 h-4 mr-2 text-purple-500" />
-                            <span>{company.totalEmployees} contacts found</span>
+                            <span>{company.totalEmployees || (company.employees || []).length} contacts found</span>
                           </div>
 
-                          {company.branchCount > 0 && (
+                          {(company.branchCount > 0 || (company.branches && company.branches.length > 0)) && (
                             <div className="flex items-center text-sm">
                               <MapPin className="w-4 h-4 mr-2 text-red-500" />
-                              <span>{company.branchCount} branch locations</span>
+                              <span>{company.branchCount || (company.branches || []).length} locations</span>
+                            </div>
+                          )}
+
+                          {(company.city || company.country) && (
+                            <div className="flex items-center text-sm">
+                              <MapPin className="w-4 h-4 mr-2 text-orange-500" />
+                              <span>{[company.city, company.country].filter(Boolean).join(", ")}</span>
                             </div>
                           )}
                         </div>
 
                         {/* Branch Addresses */}
-                        {company.branches.length > 0 && (
+                        {(company.branches && company.branches.length > 0) && (
                           <div className="mb-4">
                             <h4 className="text-sm font-medium text-foreground mb-2">
                               Branch Addresses:
@@ -391,21 +406,26 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                         {/* Employee Preview */}
                         <div>
                           <h4 className="text-sm font-medium text-foreground mb-2">
-                            Employees ({company.totalEmployees}):
+                            Employees ({company.totalEmployees || company.employees?.length || 0}):
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {company.employees.slice(0, 6).map((employee, empIdx) => (
+                            {(company.employees || []).slice(0, 6).map((employee, empIdx) => (
                               <div
                                 key={empIdx}
                                 className="flex items-center justify-between p-2 bg-background border rounded text-sm"
                               >
                                 <div>
                                   <div className="font-medium">
-                                    {employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                                    {employee.fullName || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unknown'}
                                   </div>
                                   <div className="text-muted-foreground text-xs">
                                     {employee.title || "No title"}
                                   </div>
+                                  {employee.email && (
+                                    <div className="text-blue-600 text-xs">
+                                      {employee.email}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   {employee.email && (
@@ -416,12 +436,17 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
                                       {employee.emailStatus || 'Found'}
                                     </Badge>
                                   )}
+                                  {employee.confidence && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {employee.confidence}%
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             ))}
-                            {company.employees.length > 6 && (
+                            {(company.employees || []).length > 6 && (
                               <div className="text-sm text-muted-foreground p-2">
-                                +{company.employees.length - 6} more employees...
+                                +{(company.employees || []).length - 6} more employees...
                               </div>
                             )}
                           </div>
