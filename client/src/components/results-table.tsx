@@ -67,7 +67,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
       city: search.city || "",
       email_status: search.emailStatus || "",
       status: search.status,
-      search_date: typeof search.createdAt === 'string' ? search.createdAt.split('T')[0] : search.createdAt.toISOString().split('T')[0],
+      search_date: search.createdAt ? (typeof search.createdAt === 'string' ? search.createdAt.split('T')[0] : search.createdAt.toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
     }));
 
     exportToCsv(csvData, `email-search-results-${new Date().toISOString().split('T')[0]}.csv`);
@@ -249,7 +249,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                             {search.fullName || `${search.firstName} ${search.lastName}`}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {search.title || "No title"}
+                            {search.title || (search.fullName && search.fullName !== `${search.firstName} ${search.lastName}` ? search.fullName : "Employee")}
                           </div>
                           {search.industry && (
                             <div className="text-xs text-blue-600 dark:text-blue-400">
@@ -307,9 +307,13 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                           {search.website}
                         </div>
                       )}
-                      {search.companySize && (
+                      {search.companySize ? (
                         <div className="text-xs text-green-600 dark:text-green-400">
                           {search.companySize} employees
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">
+                          Size unknown
                         </div>
                       )}
                     </td>
@@ -319,8 +323,13 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                           <div className="text-sm text-foreground">{search.city}</div>
                           <div className="text-xs text-muted-foreground">{search.country}</div>
                         </div>
+                      ) : search.domain ? (
+                        <div>
+                          <div className="text-sm text-foreground">{search.domain}</div>
+                          <div className="text-xs text-muted-foreground">Domain based</div>
+                        </div>
                       ) : (
-                        <span className="text-sm text-muted-foreground">Not available</span>
+                        <span className="text-sm text-muted-foreground">Location not available</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
