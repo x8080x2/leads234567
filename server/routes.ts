@@ -32,31 +32,26 @@ async function searchContactsWithGetProspect(
   },
   apiKey: string
 ): Promise<GetProspectResponse[]> {
-  // Use the official GetProspect leads API endpoint
-  const baseUrl = 'https://api.getprospect.com/public/v1/leads';
-  const params = new URLSearchParams();
-
-  // Required parameter: domain (use company as domain)
-  if (searchParams.company) {
-    params.append('domain', searchParams.company);
-  }
+  // Use the correct GetProspect API endpoint for domain search
+  const baseUrl = 'https://api.getprospect.com/v1/leads/search';
   
-  // Optional filters
-  if (searchParams.jobTitle) params.append('job_title', searchParams.jobTitle);
-  if (searchParams.location) params.append('location', searchParams.location);
-  
-  // Pagination - use per_page instead of limit
-  if (searchParams.limit) params.append('per_page', searchParams.limit.toString());
+  const requestBody = {
+    domain: searchParams.company,
+    limit: searchParams.limit || 10
+  };
 
-  const url = `${baseUrl}?${params.toString()}`;
+  // Add optional filters if provided
+  if (searchParams.jobTitle) requestBody.job_title = searchParams.jobTitle;
+  if (searchParams.location) requestBody.location = searchParams.location;
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
+    const response = await fetch(baseUrl, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-      }
+      },
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
@@ -73,17 +68,17 @@ async function searchContactsWithGetProspect(
 
     const data = await response.json();
 
-    // Handle the official API response structure: { "data": [...], "meta": {...} }
-    if (data.data && Array.isArray(data.data)) {
-      return data.data.map((lead: any) => ({
+    // Handle the API response structure
+    if (data.success && data.leads && Array.isArray(data.leads)) {
+      return data.leads.map((lead: any) => ({
         email: lead.email,
         confidence: lead.confidence || 0,
-        title: lead.job_title,
+        title: lead.position || lead.job_title,
         domain: lead.domain,
-        fullName: `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
+        fullName: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
         firstName: lead.first_name,
         lastName: lead.last_name,
-        company: lead.company_name,
+        company: lead.company || searchParams.company,
         industry: lead.industry,
         website: lead.website,
         companySize: lead.company_size,
@@ -105,11 +100,23 @@ async function findEmailWithGetProspect(
   company: string,
   apiKey: string
 ): Promise<GetProspectResponse> {
-  const name = `${firstName} ${lastName}`;
-  const url = `https://api.getprospect.com/public/v1/email/find?name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}&apiKey=${apiKey}`;
+  const url = 'https://api.getprospect.com/v1/leads/email';
+  
+  const requestBody = {
+    first_name: firstName,
+    last_name: lastName,
+    domain: company
+  };
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -125,24 +132,24 @@ async function findEmailWithGetProspect(
 
     const data = await response.json();
 
-    // Parse GetProspect response - adjust based on actual API response format
-    if (data.email) {
+    // Parse GetProspect response
+    if (data.success && data.email) {
       return {
         email: data.email,
         confidence: data.confidence || data.score || 0,
-        title: data.title || data.position,
+        title: data.position || data.job_title,
         domain: data.domain || company,
-        fullName: data.full_name || data.fullName || `${firstName} ${lastName}`,
+        fullName: data.name || `${firstName} ${lastName}`,
         industry: data.industry,
         website: data.website,
-        companySize: data.company_size || data.companySize,
+        companySize: data.company_size,
         country: data.country,
         city: data.city,
-        emailStatus: data.email_status || data.emailStatus || 'UNKNOWN',
+        emailStatus: data.email_status || 'UNKNOWN',
       };
     } else {
       return {
-        error: "No email found",
+        error: data.message || "No email found",
       };
     }
   } catch (error) {
