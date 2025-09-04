@@ -11,7 +11,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Search } from "lucide-react";
 
 const singleSearchSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  firstName: z.string().min(1, "First Name is required"),
+  lastName: z.string().min(1, "Last Name is required"),
   company: z.string().min(1, "Company is required"),
 });
 
@@ -28,7 +29,8 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
   const form = useForm<SingleSearchForm>({
     resolver: zodResolver(singleSearchSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       company: "",
     },
   });
@@ -41,7 +43,7 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/searches"] });
       onSearchComplete();
-      
+
       if (data.success) {
         toast({
           title: "Email Found Successfully",
@@ -80,24 +82,43 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="e.g., Alona Shalieieva"
-                      data-testid="input-name"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g. John"
+                        data-testid="input-firstName"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g. Doe"
+                        data-testid="input-lastName"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="company"
@@ -115,10 +136,10 @@ export default function SingleSearchCard({ onSearchComplete }: SingleSearchCardP
                 </FormItem>
               )}
             />
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
+
+            <Button
+              type="submit"
+              className="w-full"
               disabled={searchMutation.isPending}
               data-testid="button-find-email"
             >
