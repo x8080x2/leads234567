@@ -234,8 +234,8 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                 </tr>
               ) : (
                 searches.map((search) => (
-                  <tr 
-                    key={search.id} 
+                  <tr
+                    key={search.id}
                     className="hover:bg-accent transition-colors"
                     data-testid={`row-search-${search.id}`}
                   >
@@ -245,8 +245,8 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                           <User className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-foreground">
-                            {search.fullName || (search.firstName && search.lastName ? `${search.firstName} ${search.lastName}` : 'Unknown Name')}
+                          <div className="font-medium text-foreground">
+                            {search.fullName || `${search.firstName} ${search.lastName}`}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {search.title || "No title"}
@@ -278,11 +278,11 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                           </div>
                           {search.emailStatus && (
                             <div className="mt-1">
-                              <Badge 
+                              <Badge
                                 variant={search.emailStatus === 'VALID' ? 'default' : 'secondary'}
                                 className={`text-xs ${
-                                  search.emailStatus === 'VALID' 
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                  search.emailStatus === 'VALID'
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                     : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                                 }`}
                               >
@@ -327,11 +327,11 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
                       <div className="space-y-1">
                         {getConfidenceBadge(search)}
                         {search.emailStatus && (
-                          <Badge 
+                          <Badge
                             variant={search.emailStatus === 'VALID' ? 'default' : 'secondary'}
                             className={`text-xs ${
-                              search.emailStatus === 'VALID' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                              search.emailStatus === 'VALID'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                 : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                             }`}
                           >

@@ -20,21 +20,25 @@ export default function SearchHistory({ searches }: SearchHistoryProps) {
 
   const formatTimeAgo = (date: Date | string) => {
     const now = new Date();
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    
+    const searchDate = typeof date === 'string' ? new Date(date) : date;
+
     // Check if date is valid
-    if (isNaN(dateObj.getTime())) {
-      return "Unknown";
+    if (!searchDate || isNaN(searchDate.getTime())) {
+      return 'Unknown time';
     }
-    
-    const diffInHours = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) {
+
+    const diffInSeconds = Math.floor((now.getTime() - searchDate.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
       return "Just now";
-    } else if (diffInHours < 24) {
+    } else if (diffInSeconds < 3600) {
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      const diffInHours = Math.floor(diffInSeconds / 3600);
       return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
     } else {
-      const diffInDays = Math.floor(diffInHours / 24);
+      const diffInDays = Math.floor(diffInSeconds / 86400);
       return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
     }
   };
