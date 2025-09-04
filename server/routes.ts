@@ -32,14 +32,16 @@ async function searchContactsWithGetProspect(
   },
   apiKey: string
 ): Promise<GetProspectResponse[]> {
-  // Build search URL with filters
-  const baseUrl = 'https://api.getprospect.com/public/v1/search/contacts';
+  // Try people search with company filter
+  const baseUrl = 'https://api.getprospect.com/public/v1/people/search';
   const params = new URLSearchParams();
   params.append('apiKey', apiKey);
 
+  if (searchParams.company) {
+    params.append('company', searchParams.company);
+  }
   if (searchParams.firstName) params.append('first_name', searchParams.firstName);
   if (searchParams.lastName) params.append('last_name', searchParams.lastName);
-  if (searchParams.company) params.append('company', searchParams.company);
   if (searchParams.industry) params.append('industry', searchParams.industry);
   if (searchParams.jobTitle) params.append('job_title', searchParams.jobTitle);
   if (searchParams.location) params.append('location', searchParams.location);
@@ -616,10 +618,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company domain search - finds multiple employees using common role patterns
+  // Enhanced company search - finds real employees using common names and titles
   app.post("/api/search/company", async (req, res) => {
     try {
-      const { company, domain } = req.body;
+      const { company, domain, limit = 10 } = req.body;
 
       if (!company && !domain) {
         return res.status(400).json({ error: "Company name or domain is required" });
@@ -632,44 +634,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const searchTarget = company || domain;
 
-      // Common roles to search for at any company
-      const commonRoles = [
-        { firstName: "CEO", lastName: "" },
-        { firstName: "President", lastName: "" },
-        { firstName: "Sales", lastName: "Manager" },
-        { firstName: "Marketing", lastName: "Director" },
-        { firstName: "Project", lastName: "Manager" },
-        { firstName: "Operations", lastName: "Manager" },
-        { firstName: "Business", lastName: "Development" },
-        { firstName: "Customer", lastName: "Service" },
-        { firstName: "Human", lastName: "Resources" },
-        { firstName: "Finance", lastName: "Manager" },
-        { firstName: "IT", lastName: "Manager" },
-        { firstName: "Construction", lastName: "Supervisor" },
-        { firstName: "Regional", lastName: "Manager" },
-        { firstName: "Area", lastName: "Manager" },
-        { firstName: "Branch", lastName: "Manager" }
-      ];
-
-      // Common first names to try with the company
-      const commonNames = [
+      // Expanded list of real names and professional titles to find actual employees
+      const employeeSearchTerms = [
+        // Common first names with common surnames
         { firstName: "John", lastName: "Smith" },
-        { firstName: "Mike", lastName: "Johnson" },
-        { firstName: "Sarah", lastName: "Wilson" },
-        { firstName: "David", lastName: "Brown" },
-        { firstName: "Jennifer", lastName: "Davis" },
-        { firstName: "Michael", lastName: "Miller" },
-        { firstName: "Lisa", lastName: "Anderson" },
-        { firstName: "Robert", lastName: "Taylor" }
+        { firstName: "Sarah", lastName: "Johnson" }, 
+        { firstName: "Michael", lastName: "Williams" },
+        { firstName: "Jennifer", lastName: "Brown" },
+        { firstName: "David", lastName: "Jones" },
+        { firstName: "Lisa", lastName: "Garcia" },
+        { firstName: "Robert", lastName: "Miller" },
+        { firstName: "Maria", lastName: "Davis" },
+        { firstName: "James", lastName: "Rodriguez" },
+        { firstName: "Amanda", lastName: "Wilson" },
+        { firstName: "Christopher", lastName: "Martinez" },
+        { firstName: "Ashley", lastName: "Anderson" },
+        { firstName: "Matthew", lastName: "Taylor" },
+        { firstName: "Michelle", lastName: "Thomas" },
+        { firstName: "Daniel", lastName: "Hernandez" },
+        { firstName: "Emily", lastName: "Moore" },
+        { firstName: "Joshua", lastName: "Martin" },
+        { firstName: "Jessica", lastName: "Jackson" },
+        { firstName: "Andrew", lastName: "Thompson" },
+        { firstName: "Nicole", lastName: "White" }
       ];
 
-      const allSearches = [...commonRoles, ...commonNames];
       const results = [];
       const errors = [];
+      let maxSearches = Math.min(employeeSearchTerms.length, limit || 10);
 
       // Search with rate limiting (1 second between requests)
-      for (let i = 0; i < Math.min(allSearches.length, 20); i++) {
-        const search = allSearches[i];
+      for (let i = 0; i < maxSearches; i++) {
+        const search = employeeSearchTerms[i];
 
         try {
           const result = await findEmailWithGetProspect(
