@@ -1,5 +1,11 @@
-import { type EmailSearch, type InsertEmailSearch, type ApiConfig, type InsertApiConfig, type BatchJob, type InsertBatchJob } from "@shared/schema";
+import { type EmailSearch, type InsertEmailSearch, type ApiConfig, type InsertApiConfig, type BatchJob, type InsertBatchJob, emailSearches, apiConfig, batchJobs } from "@shared/schema";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import { eq, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
+
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
 
 export interface IStorage {
   // Email searches
@@ -123,4 +129,72 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DbStorage implements IStorage {
+  // Email searches
+  async createEmailSearch(insertSearch: InsertEmailSearch): Promise<EmailSearch> {
+    const [result] = await db.insert(emailSearches).values(insertSearch).returning();
+    return result;
+  }
+
+  async getEmailSearches(limit = 50, offset = 0): Promise<EmailSearch[]> {
+    return await db.select().from(emailSearches)
+      .orderBy(desc(emailSearches.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getEmailSearchesByBatchId(batchId: string): Promise<EmailSearch[]> {
+    return await db.select().from(emailSearches)
+      .where(eq(emailSearches.batchId, batchId))
+      .orderBy(desc(emailSearches.createdAt));
+  }
+
+  async clearEmailSearches(): Promise<void> {
+    await db.delete(emailSearches);
+  }
+
+  // API configuration
+  async saveApiConfig(insertConfig: InsertApiConfig): Promise<ApiConfig> {
+    // Deactivate existing configs
+    await db.update(apiConfig).set({ isActive: "false" });
+    
+    const [result] = await db.insert(apiConfig).values(insertConfig).returning();
+    return result;
+  }
+
+  async getActiveApiConfig(): Promise<ApiConfig | undefined> {
+    const [result] = await db.select().from(apiConfig)
+      .where(eq(apiConfig.isActive, "true"))
+      .limit(1);
+    return result;
+  }
+
+  // Batch jobs
+  async createBatchJob(insertJob: InsertBatchJob): Promise<BatchJob> {
+    const [result] = await db.insert(batchJobs).values(insertJob).returning();
+    return result;
+  }
+
+  async getBatchJob(id: string): Promise<BatchJob | undefined> {
+    const [result] = await db.select().from(batchJobs)
+      .where(eq(batchJobs.id, id))
+      .limit(1);
+    return result;
+  }
+
+  async updateBatchJob(id: string, updates: Partial<BatchJob>): Promise<BatchJob | undefined> {
+    const [result] = await db.update(batchJobs)
+      .set(updates)
+      .where(eq(batchJobs.id, id))
+      .returning();
+    return result;
+  }
+
+  async getBatchJobs(limit = 10): Promise<BatchJob[]> {
+    return await db.select().from(batchJobs)
+      .orderBy(desc(batchJobs.createdAt))
+      .limit(limit);
+  }
+}
+
+export const storage = new DbStorage();
