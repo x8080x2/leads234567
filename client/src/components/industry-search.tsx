@@ -107,7 +107,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
       </Card>
 
       {/* Available Industries from GetProspect API */}
-      {!selectedIndustry && availableIndustries?.industries && availableIndustries.industries.length > 0 && (
+      {!selectedIndustry && (availableIndustries as any)?.industries && (availableIndustries as any).industries.length > 0 && (
         <Card data-testid="available-industries-card">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -115,7 +115,7 @@ export default function IndustrySearch({ onCompanySelect }: IndustrySearchProps)
               Available Industries
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Select from {availableIndustries?.industries?.length || 0} industries supported by GetProspect API
+              Select from {((availableIndustries as any)?.industries?.length || 0)} industries supported by GetProspect API
             </p>
           </CardHeader>
           <CardContent>

@@ -60,11 +60,18 @@ export default function AdvancedSearch() {
 
   // Advanced search mutation
   const advancedSearchMutation = useMutation({
-    mutationFn: (searchParams: AdvancedSearchForm) =>
-      apiRequest("/api/search/advanced", {
-        method: "POST",
-        body: searchParams,
-      }),
+    mutationFn: async (searchParams: AdvancedSearchForm) => {
+      const response = await fetch('/api/search/advanced', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchParams)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Search failed');
+      }
+      return response.json();
+    },
     onSuccess: (data) => {
       toast({
         title: "Search completed",
@@ -183,7 +190,7 @@ export default function AdvancedSearch() {
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableIndustries?.industries?.map((industry: string) => (
+                  {((availableIndustries as any)?.industries || []).map((industry: string) => (
                     <SelectItem key={industry} value={industry}>
                       {industry}
                     </SelectItem>
