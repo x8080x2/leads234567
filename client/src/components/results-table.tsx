@@ -52,8 +52,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
     }
 
     const csvData = searches.map(search => ({
-      first_name: search.firstName,
-      last_name: search.lastName,
+      name: search.name,
       company: search.company,
       email: search.email || "",
       confidence: search.confidence || "",
@@ -126,6 +125,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
   };
 
   const getInitials = (name: string) => {
+    if (!name) return "??";
     const nameParts = name.split(' ');
     if (nameParts.length >= 2) {
       return `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`.toUpperCase();

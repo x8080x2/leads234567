@@ -85,7 +85,7 @@ export default function SearchHistory({ searches }: SearchHistoryProps) {
                 <div className="flex items-center space-x-3">
                   <div className="text-sm">
                     <span className="font-medium text-foreground">
-                      {search.firstName} {search.lastName} @ {search.company}
+                      {search.name} @ {search.company}
                     </span>
                     <span className="text-muted-foreground ml-2">
                       {formatTimeAgo(search.createdAt)}

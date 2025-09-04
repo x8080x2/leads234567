@@ -137,10 +137,15 @@ export class DbStorage implements IStorage {
   }
 
   async getEmailSearches(limit = 50, offset = 0): Promise<EmailSearch[]> {
-    return await db.select().from(emailSearches)
-      .orderBy(desc(emailSearches.createdAt))
-      .limit(limit)
-      .offset(offset);
+    try {
+      return await db.select().from(emailSearches)
+        .orderBy(desc(emailSearches.createdAt))
+        .limit(limit)
+        .offset(offset);
+    } catch (error) {
+      console.error('Error fetching email searches:', error);
+      throw new Error('Failed to fetch email searches from database');
+    }
   }
 
   async getEmailSearchesByBatchId(batchId: string): Promise<EmailSearch[]> {
