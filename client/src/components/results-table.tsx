@@ -67,7 +67,7 @@ export default function ResultsTable({ searches, refreshTrigger, onRefresh }: Re
       city: search.city || "",
       email_status: search.emailStatus || "",
       status: search.status,
-      search_date: search.createdAt ? (typeof search.createdAt === 'string' ? search.createdAt.split('T')[0] : search.createdAt.toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+      search_date: search.createdAt ? (typeof search.createdAt === 'string' ? search.createdAt.split('T')[0] : new Date(search.createdAt).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
     }));
 
     exportToCsv(csvData, `email-search-results-${new Date().toISOString().split('T')[0]}.csv`);

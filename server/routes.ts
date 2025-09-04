@@ -433,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companySize: stats.companySize,
         country: stats.country,
         city: stats.city,
-        employees: stats.employees.map(emp => ({
+        employees: stats.employees.map((emp: any) => ({
           fullName: emp.fullName,
           firstName: emp.firstName,
           lastName: emp.lastName,
@@ -701,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Rate limiting - 1 second between requests
-          if (i < allSearches.length - 1) {
+          if (i < maxSearches - 1) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
 
