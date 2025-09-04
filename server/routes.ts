@@ -33,7 +33,7 @@ async function searchContactsWithGetProspect(
   apiKey: string
 ): Promise<GetProspectResponse[]> {
   // Use the correct GetProspect API endpoint for domain search
-  const baseUrl = 'https://api.getprospect.com/v1/people/search';
+  const baseUrl = 'https://api.getprospect.com/v2/people/search';
   
   const requestBody: any = {
     company_domain: searchParams.company,
