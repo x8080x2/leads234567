@@ -36,6 +36,12 @@ export class MemStorage implements IStorage {
       ...insertSearch,
       id,
       createdAt: new Date(),
+      title: insertSearch.title || null,
+      email: insertSearch.email || null,
+      confidence: insertSearch.confidence || null,
+      domain: insertSearch.domain || null,
+      errorMessage: insertSearch.errorMessage || null,
+      batchId: insertSearch.batchId || null,
     };
     this.emailSearches.set(id, search);
     return search;
@@ -69,6 +75,7 @@ export class MemStorage implements IStorage {
       ...insertConfig,
       id,
       createdAt: new Date(),
+      isActive: insertConfig.isActive || "true",
     };
     this.apiConfigs.set(id, config);
     return config;
@@ -85,6 +92,8 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       completedAt: null,
+      processedRecords: insertJob.processedRecords || 0,
+      successfulRecords: insertJob.successfulRecords || 0,
     };
     this.batchJobs.set(id, job);
     return job;

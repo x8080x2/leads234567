@@ -49,7 +49,7 @@ export default function EmailFinder() {
                   API Ready
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {configData?.hasApiKey ? "Configured" : "Not configured"}
+                  {(configData as any)?.hasApiKey ? "Configured" : "Not configured"}
                 </p>
               </div>
               <button 
@@ -75,7 +75,7 @@ export default function EmailFinder() {
           {/* Results Panel */}
           <div className="lg:col-span-2">
             <ResultsTable 
-              searches={searchData?.searches || []} 
+              searches={(searchData as any)?.searches || []} 
               refreshTrigger={refreshTrigger}
               onRefresh={handleSearchComplete}
             />
@@ -83,7 +83,7 @@ export default function EmailFinder() {
         </div>
 
         {/* Search History */}
-        <SearchHistory searches={searchData?.searches || []} />
+        <SearchHistory searches={(searchData as any)?.searches || []} />
       </main>
     </div>
   );
