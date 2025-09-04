@@ -33,7 +33,7 @@ async function searchContactsWithGetProspect(
   apiKey: string
 ): Promise<GetProspectResponse[]> {
   // Use the correct GetProspect API endpoint for domain search
-  const baseUrl = 'https://api.getprospect.com/v1/leads/search';
+  const baseUrl = 'https://api.getprospect.com/v1/people/search';
   
   const requestBody = {
     domain: searchParams.company,
@@ -48,7 +48,7 @@ async function searchContactsWithGetProspect(
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'X-API-Key': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody)
@@ -69,8 +69,8 @@ async function searchContactsWithGetProspect(
     const data = await response.json();
 
     // Handle the API response structure
-    if (data.success && data.leads && Array.isArray(data.leads)) {
-      return data.leads.map((lead: any) => ({
+    if (data.people && Array.isArray(data.people)) {
+      return data.people.map((person: any) => ({
         email: lead.email,
         confidence: lead.confidence || 0,
         title: lead.position || lead.job_title,
@@ -100,7 +100,7 @@ async function findEmailWithGetProspect(
   company: string,
   apiKey: string
 ): Promise<GetProspectResponse> {
-  const url = 'https://api.getprospect.com/v1/leads/email';
+  const url = 'https://api.getprospect.com/v1/people/email';
   
   const requestBody = {
     first_name: firstName,
@@ -112,7 +112,7 @@ async function findEmailWithGetProspect(
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'X-API-Key': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody)
@@ -133,7 +133,7 @@ async function findEmailWithGetProspect(
     const data = await response.json();
 
     // Parse GetProspect response
-    if (data.success && data.email) {
+    if (data.email) {
       return {
         email: data.email,
         confidence: data.confidence || data.score || 0,
